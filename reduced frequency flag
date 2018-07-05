@@ -1,0 +1,27 @@
+SELECT 
+ rf.reduced_freq_flg,
+ rf.indiv_id,
+ res.wk_idnt,
+COUNT (distinct res.contact_urn) AS sent,
+COUNT (res.opened_dt) AS opens,         
+COUNT (res.max_click_dt)  AS clicks,
+count(distinct dtl.pos_trans_key) as trans,
+sum(dtl.extended_sls_amt) as sales
+FROM ua_email_resolution res
+inner join ua_email_ref rf on res.email_id = rf.email_id and rf.pref_indiv_em_flg = 'Y' and rf.ca_valid_email_flg= 'N'
+inner join ua_email email on rf.email_id = email.email_id
+inner join ua_pos_tm_day tm on  to_date(email.fst_activity_dt) = tm.day_dt
+left join ua_pos_trans_dtl dtl on rf.indiv_id = dtl.indiv_id and dtl.wk_idnt between 201801 and 201821
+WHERE res.wk_idnt BETWEEN 201810 AND 201821
+GROUP BY res.wk_idnt, rf.indiv_id, rf.reduced_freq_flg, tm.fiscal_year, tm.fiscal_mth
+
+SELECT 
+rf.reduced_freq_flg,
+count(distinct  rf.indiv_id) as customers,
+COUNT (distinct res.contact_urn)        AS sent,
+COUNT (res.opened_dt)                          AS opens,         
+COUNT (res.max_click_dt)                       AS clicks
+FROM ua_email_resolution res
+inner join ua_email_ref rf on res.email_id = rf.email_id and rf.pref_indiv_em_flg = 'Y' and rf.ca_valid_email_flg= 'N'
+WHERE res.wk_idnt BETWEEN 201710 AND 201721
+GROUP BY rf.reduced_freq_flg;
