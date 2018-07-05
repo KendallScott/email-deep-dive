@@ -1,0 +1,14 @@
+create table trigger_email as
+SELECT 
+          campaign_name,
+         res.wk_idnt,
+         COUNT (distinct res.contact_urn) AS sent,
+         COUNT (res.opened_dt) AS opens,         
+         COUNT (res.max_click_dt)  AS clicks
+    FROM ua_email_resolution res
+    inner join ua_campaign camp on camp.campaign_id = res.campaign_id
+    inner join ua_campaign_cell cell on cell.campaign_id = camp.campaign_id
+    inner join ua_email_ref rf on res.email_id        = rf.email_id and  rf.ca_valid_email_flg ='N' and rf.pref_indiv_em_flg='Y'
+   WHERE res.wk_idnt BETWEEN 201701 AND 201821
+   and UPPER(campaign_name) like '%BROWSE%'
+GROUP BY res.wk_idnt, campaign_name
