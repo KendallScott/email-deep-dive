@@ -1,0 +1,119 @@
+set worksheetname email_trans_2017;
+DEFINE end_wk_idnt = '201719';
+DEFINE mth = 'email_2017';
+
+
+create table start_wk_&mth as
+select &end_wk_idnt as end_wk_idnt,
+wk_idnt as start_wk_idnt ,
+day_idnt as start_day_idnt
+from ua_pos_tm_day
+where day_dt = 
+(
+select day_dt - 357
+from
+(select max(day_dt) as day_dt
+from ua_pos_tm_day where wk_idnt = &end_wk_idnt)
+);
+
+create table rolling12trans_&mth as
+select
+coalesce(stre.indiv_id, ecom.indiv_id)                                                                                                                                                                                                                 as indiv_id,
+sum((coalesce(stre.rolling12store_sales,0))+ (coalesce(ecom.rolling12ecom_sales, 0)))                                                                                                               as total_sales,
+sum((coalesce(stre.rolling12store_trans,0))+ (coalesce(ecom.rolling12ecom_trans, 0)))                                                                                                               as total_trans,
+sum((coalesce(stre.rolling12store_units,0))+ (coalesce(ecom.rolling12ecom_units, 0)))                                                                                                               as total_units,
+sum(stre.rolling12store_gm)                                                                                                                                                                                                                                       as gm_store,
+sum(stre.rolling12store_sales)                                                                                                                                                                                                                                   as sales_store,
+(case when stre.indiv_id= ecom.indiv_id then 'omni' when stre.indiv_id >0 then 'store only' when ecom.indiv_id >0 then 'ecom only' end)         as channel
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as rolling12store_trans,
+          sum(dtl.extended_sls_amt)                               as rolling12store_sales,
+          sum(dtl.grs_mrgn_amt)                                   as rolling12store_gm,
+          sum(dtl.qty)                                            as rolling12store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between (select start_wk_idnt from start_wk_&mth) and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                           as rolling12ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                             as rolling12ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                as rolling12ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between (select start_wk_idnt from start_wk_&mth) and &end_wk_idnt
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
+group by stre.indiv_id, ecom.indiv_id;
+
+SELECT 
+distinct (rolling.total_trans)                         as rolling12_trans,
+count(distinct  rf.indiv_id)                            as customers,
+COUNT (distinct res.contact_urn)              as sent,
+COUNT (res.opened_dt)                                as opens,         
+COUNT (res.max_click_dt)                            as clicks
+FROM ua_email_resolution res
+inner join ua_email_ref rf on res.email_id = rf.email_id and rf.pref_indiv_em_flg = 'Y' and rf.ca_valid_email_flg= 'N'
+left join rolling12trans_&mth rolling on rf.indiv_id = rolling.indiv_id
+WHERE res.wk_idnt BETWEEN 201708 AND 201719
+GROUP BY rolling.total_trans;set worksheetname email_trans;
+
+DEFINE end_wk_idnt = '201819';
+DEFINE mth = 'email';
+
+create table start_wk_&mth as
+select &end_wk_idnt as end_wk_idnt,
+wk_idnt as start_wk_idnt ,
+day_idnt as start_day_idnt
+from ua_pos_tm_day
+where day_dt = 
+(
+select day_dt - 357
+from
+(select max(day_dt) as day_dt
+from ua_pos_tm_day where wk_idnt = &end_wk_idnt)
+);
+
+create table rolling12trans_&mth as
+select
+coalesce(stre.indiv_id, ecom.indiv_id)                                                                                                                                                                                                                 as indiv_id,
+sum((coalesce(stre.rolling12store_sales,0))+ (coalesce(ecom.rolling12ecom_sales, 0)))                                                                                                               as total_sales,
+sum((coalesce(stre.rolling12store_trans,0))+ (coalesce(ecom.rolling12ecom_trans, 0)))                                                                                                               as total_trans,
+sum((coalesce(stre.rolling12store_units,0))+ (coalesce(ecom.rolling12ecom_units, 0)))                                                                                                               as total_units,
+sum(stre.rolling12store_gm)                                                                                                                                                                                                                                       as gm_store,
+sum(stre.rolling12store_sales)                                                                                                                                                                                                                                   as sales_store,
+(case when stre.indiv_id= ecom.indiv_id then 'omni' when stre.indiv_id >0 then 'store only' when ecom.indiv_id >0 then 'ecom only' end)         as channel
+from (select
+          dtl.indiv_id,
+          count(distinct dtl.pos_trans_key)                       as rolling12store_trans,
+          sum(dtl.extended_sls_amt)                               as rolling12store_sales,
+          sum(dtl.grs_mrgn_amt)                                   as rolling12store_gm,
+          sum(dtl.qty)                                            as rolling12store_units
+         from         ua_pos_trans_dtl dtl
+         inner join ua_store str on dtl.loc_key = str.loc_key
+         where dtl.wk_idnt between (select start_wk_idnt from start_wk_&mth) and &end_wk_idnt and dtl.trans_typ_key in(19,22,33) and str.distt_idnt != '999'
+        group by dtl.indiv_id) stre
+    full outer join(
+    select
+        ecom.indiv_id,
+        count(distinct ecom.order_id)                           as rolling12ecom_trans,
+        sum(ecom.flfll_net_ttl_amt)                             as rolling12ecom_sales,
+        sum(ecom.flfll_unit_cnt)                                as rolling12ecom_units
+        from ua_ecom_order_dtl   ecom
+        inner join ua_pos_tm_day tm on to_date(ecom.flfll_first_dt) = (tm.day_dt)
+        where tm.wk_idnt between (select start_wk_idnt from start_wk_&mth) and &end_wk_idnt
+        group by ecom.indiv_id) ecom on stre.indiv_id = ecom.indiv_id
+group by stre.indiv_id, ecom.indiv_id;
+
+SELECT 
+distinct (rolling.total_trans)                         as rolling12_trans,
+count(distinct  rf.indiv_id)                            as customers,
+COUNT (distinct res.contact_urn)              as sent,
+COUNT (res.opened_dt)                                as opens,         
+COUNT (res.max_click_dt)                            as clicks
+FROM ua_email_resolution res
+inner join ua_email_ref rf on res.email_id = rf.email_id and rf.pref_indiv_em_flg = 'Y' and rf.ca_valid_email_flg= 'N'
+left join rolling12trans_&mth rolling on rf.indiv_id = rolling.indiv_id
+WHERE res.wk_idnt BETWEEN 201808 AND 201819
+GROUP BY rolling.total_trans;
