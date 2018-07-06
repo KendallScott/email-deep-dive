@@ -1,0 +1,47 @@
+SELECT 
+          campaign_name,
+          count(distinct res.wk_idnt),
+         COUNT (distinct res.contact_urn) AS sent,
+         COUNT (res.opened_dt) AS opens,         
+         COUNT (res.max_click_dt)  AS clicks
+    FROM ua_email_resolution res
+    inner join ua_campaign camp on camp.campaign_id = res.campaign_id
+    inner join ua_campaign_cell cell on cell.campaign_id = camp.campaign_id
+    inner join ua_email_ref rf on res.email_id        = rf.email_id and  rf.ca_valid_email_flg ='N' and rf.pref_indiv_em_flg='Y'
+   WHERE res.wk_idnt BETWEEN 201801 AND 201821
+   and UPPER(campaign_name) like '%TRG_CATEG%'
+GROUP BY campaign_name
+
+SELECT 
+tm.fiscal_year,
+count(distinct  rf.indiv_id)                         as customers,
+COUNT (distinct res.contact_urn)           AS sent,
+COUNT (res.opened_dt)                             AS opens,         
+COUNT (res.max_click_dt)                         AS clicks,
+count(distinct dtl.pos_trans_key)           as trans,
+sum(dtl.extended_sls_amt)                      as sales
+FROM ua_email_resolution res
+inner join ua_email_ref rf on res.email_id = rf.email_id and rf.pref_indiv_em_flg = 'Y' and rf.ca_valid_email_flg= 'N'
+inner join ua_email email on rf.email_id = email.email_id
+inner join ua_pos_tm_day tm on  to_date(email.fst_activity_dt) = tm.day_dt
+left join ua_pos_trans_dtl dtl on rf.indiv_id = dtl.indiv_id and dtl.wk_idnt between 201708 AND 201719 and res.wk_idnt = dtl.wk_idnt
+WHERE res.wk_idnt BETWEEN 201708 AND 201719
+GROUP BY  tm.fiscal_year
+order by tm.fiscal_year
+
+SELECT 
+tm.fiscal_year,
+count(distinct  rf.indiv_id)                         as customers,
+COUNT (distinct res.contact_urn)           AS sent,
+COUNT (res.opened_dt)                             AS opens,         
+COUNT (res.max_click_dt)                         AS clicks,
+count(distinct dtl.pos_trans_key)           as trans,
+sum(dtl.extended_sls_amt)                      as sales
+FROM ua_email_resolution res
+inner join ua_email_ref rf on res.email_id = rf.email_id and rf.pref_indiv_em_flg = 'Y' and rf.ca_valid_email_flg= 'N'
+inner join ua_email email on rf.email_id = email.email_id
+inner join ua_pos_tm_day tm on  to_date(email.fst_activity_dt) = tm.day_dt
+left join ua_pos_trans_dtl dtl on rf.indiv_id = dtl.indiv_id and dtl.wk_idnt between 201808 AND 201819 and res.wk_idnt = dtl.wk_idnt
+WHERE res.wk_idnt BETWEEN 201808 AND 201819
+GROUP BY  tm.fiscal_year
+order by tm.fiscal_year
