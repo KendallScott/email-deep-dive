@@ -1,6 +1,10 @@
 set worksheetname email_trans_2017;
 DEFINE end_wk_idnt = '201719';
 DEFINE mth = 'email_2017';
+set worksheetname email_trans_2017;
+DEFINE end_wk_idnt = '201819';
+DEFINE mth = 'email';
+
 
 SELECT 
 rf.reduced_freq_flg,
@@ -11,6 +15,19 @@ COUNT (res.max_click_dt)                       AS clicks
 FROM ua_email_resolution res
 inner join ua_email_ref rf on res.email_id = rf.email_id and rf.pref_indiv_em_flg = 'Y' and rf.ca_valid_email_flg= 'N'
 left join rolling12trans_&mth rolling on rf.indiv_id = rolling.indiv_id
-WHERE res.wk_idnt BETWEEN 201708 AND 201719
+WHERE res.wk_idnt BETWEEN 201808 AND 201819
 and rolling.total_trans > 2
 GROUP BY rf.reduced_freq_flg;
+
+
+SELECT 
+distinct (rolling.total_trans)                         as rolling12_trans,
+count(distinct  rf.indiv_id)                            as customers,
+COUNT (distinct res.contact_urn)              as sent,
+COUNT (res.opened_dt)                                as opens,         
+COUNT (res.max_click_dt)                            as clicks
+FROM ua_email_resolution res
+inner join ua_email_ref rf on res.email_id = rf.email_id and rf.pref_indiv_em_flg = 'Y' and rf.ca_valid_email_flg= 'N'
+left join rolling12trans_&mth rolling on rf.indiv_id = rolling.indiv_id
+WHERE res.wk_idnt BETWEEN 201808 AND 201819
+GROUP BY rolling.total_trans;
